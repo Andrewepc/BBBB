@@ -12,15 +12,18 @@ public class PlayerController : MonoBehaviour
     public float jumpHeight = 10;
     public float gravity = 10f;
     public float sprintMult = 2;
+    public float mouseDepth = 14;
     public Camera playerCam;
     public Vector3 cameraOffset = new Vector3(0, 10, -10);
 
     private float fallingSpeed;
 
+    private Vector3 mousePoint;
     private byte lastInputStates = 0b00000000;
     private byte actionStates = 0b00000000;
     private Dictionary<KeyCode, byte> inputsToByte = new Dictionary<KeyCode, byte>
     {
+        { KeyCode.Mouse0, 0b10000000 },
         { KeyCode.Space, 0b00100000 },
         { KeyCode.LeftShift, 0b00010000 },
         { KeyCode.W, 0b00001000 },
@@ -30,7 +33,7 @@ public class PlayerController : MonoBehaviour
     };
     private Dictionary<byte, System.Func<byte, byte, bool>> inputsToActions = new Dictionary<byte, System.Func<byte, byte, bool>>
     {
-        
+        { 7, (i, a) => { return ((i & 0b10000000) != 0) && ((a & 0b01000000) == 0); } },
         { 5, (i, a) => { return ((i & 0b00100000) != 0) && ((a & 0b11000000) == 0); } },
         { 4, (i, a) => { return ((i & 0b00010000) != 0) && ((a & 0b11000000) == 0); } },
         { 3, (i, a) => { i &= 0b00001010; return ((i ^ 0b00001000) == 0); } },
@@ -56,11 +59,14 @@ public class PlayerController : MonoBehaviour
         jumpingHash = Animator.StringToHash("Jumping");
         actionHash = Animator.StringToHash("Action");
         triggerNumHash = Animator.StringToHash("Trigger Number");
-        animator.SetFloat(animSpeedHash, 1);
+        animator.SetFloat(animSpeedHash, movementSpeed / 3);
     }
 
     private void CheckInputs()
     {
+        Vector3 p = Input.mousePosition;
+        p.z = mouseDepth;
+        mousePoint = Camera.main.ScreenToWorldPoint(p);
         byte inputStates = 0b00000000;
         foreach (KeyValuePair<KeyCode, byte> entry in inputsToByte)
         {
@@ -85,17 +91,27 @@ public class PlayerController : MonoBehaviour
         Vector3 facingDirection = new Vector3();
         Vector3 facingSpeed = new Vector3();
         //Debug.Log(System.Convert.ToString(actionStates, 2).PadLeft(8, '0'));
+        if ((actionStates & 0b10000000) == 0)
+        {
+            facingDirection.x = (actionStates & 0b00000001) != 0 ? 1 : 0 + (actionStates & 0b00000100) != 0 ? -1 : 0;
+            facingDirection.z = (actionStates & 0b00001000) != 0 ? 1 : 0 + (actionStates & 0b00000010) != 0 ? -1 : 0;
+        }
         
-        facingDirection.x = (actionStates & 0b00000001) != 0 ? 1 : 0 + (actionStates & 0b00000100) != 0 ? -1 : 0;
-        facingDirection.z = (actionStates & 0b00001000) != 0 ? 1 : 0 + (actionStates & 0b00000010) != 0 ? -1 : 0;
         facingDirection.Normalize();
         facingSpeed = facingDirection * movementSpeed;
-        if ((actionStates & 0b00010000) != 0) 
+        if ((actionStates & 0b00010000) != 0)
         {
             facingSpeed *= sprintMult;
-            animator.SetFloat(animSpeedHash, sprintMult);
         }
-        else animator.SetFloat(animSpeedHash, 1);
+        else 
+        {
+            animator.SetFloat(animSpeedHash, 1);
+            Vector3 aimDirection = mousePoint - transform.position;
+            aimDirection.y = 0;
+            transform.rotation = Quaternion.LookRotation(aimDirection);
+        }
+
+        
 
         if (transform.position.y > 1.5)
         {
@@ -110,11 +126,11 @@ public class PlayerController : MonoBehaviour
         }
         else 
         {
+            
             if (movingSpeed.x < facingSpeed.x) movingSpeed.x += MathF.Min(Time.fixedDeltaTime * acceleration, facingSpeed.x - movingSpeed.x);
             else if (movingSpeed.x > facingSpeed.x) movingSpeed.x -= MathF.Min(Time.fixedDeltaTime * acceleration, movingSpeed.x - facingSpeed.x);
             if (movingSpeed.z < facingSpeed.z) movingSpeed.z += MathF.Min(Time.fixedDeltaTime * acceleration, facingSpeed.z - movingSpeed.z);
             else if (movingSpeed.z > facingSpeed.z) movingSpeed.z -= MathF.Min(Time.fixedDeltaTime * acceleration, movingSpeed.z - facingSpeed.z);
-            if (movingSpeed.magnitude != 0) transform.rotation = Quaternion.LookRotation(movingSpeed);
 
             if (fallingSpeed < 0)
             {
@@ -127,7 +143,13 @@ public class PlayerController : MonoBehaviour
             fallingSpeed = 0;
             actionStates &= 0b10111111;
         }
-        
+
+        if ((actionStates & 0b10010000) != 0)
+        {
+
+            if (movingSpeed.magnitude != 0) transform.rotation = Quaternion.LookRotation(movingSpeed);
+        }
+
         if ((actionStates & 0b00100000) != 0)
         {
             fallingSpeed = jumpHeight;
@@ -147,8 +169,9 @@ public class PlayerController : MonoBehaviour
 
     private void UpdateAnimations()
     {
+        animator.SetFloat(animSpeedHash, movementSpeed / 3);
         animator.SetBool(movingHash, (actionStates & 0b00001111) != 0 && (actionStates & 0b11000000) == 0 && (actionStates & 0b00001010) != 10 && (actionStates & 0b00000101) != 5);
-        animator.SetFloat(velocityHash, movingSpeed.magnitude);
+        animator.SetFloat(velocityHash, movingSpeed.magnitude / movementSpeed);
 
         animator.SetInteger(actionHash, (actionStates & 0b00100000) != 0 ? 1 : 0);
     }
