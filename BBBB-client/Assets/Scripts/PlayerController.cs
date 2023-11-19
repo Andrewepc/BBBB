@@ -12,6 +12,8 @@ public class PlayerController : MonoBehaviour
     public float jumpHeight = 10;
     public float gravity = 10f;
     public float sprintMult = 2;
+    public Camera playerCam;
+    public Vector3 cameraOffset = new Vector3(0, 10, -10);
 
     private float fallingSpeed;
 
@@ -99,6 +101,7 @@ public class PlayerController : MonoBehaviour
         
         
         characterController.Move(Time.fixedDeltaTime * (movingSpeed + transform.up * fallingSpeed));
+        playerCam.transform.position = transform.position + cameraOffset;
     }
     void Start()
     {
