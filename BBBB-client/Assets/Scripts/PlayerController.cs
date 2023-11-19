@@ -21,6 +21,7 @@ public class PlayerController : MonoBehaviour
     private Vector3 mousePoint;
     private byte lastInputStates = 0b00000000;
     private byte actionStates = 0b00000000;
+    private byte busyStates = 0;
     private Dictionary<KeyCode, byte> inputsToByte = new Dictionary<KeyCode, byte>
     {
         { KeyCode.Mouse0, 0b10000000 },
@@ -33,7 +34,7 @@ public class PlayerController : MonoBehaviour
     };
     private Dictionary<byte, System.Func<byte, byte, bool>> inputsToActions = new Dictionary<byte, System.Func<byte, byte, bool>>
     {
-        { 7, (i, a) => { return ((i & 0b10000000) != 0) && ((a & 0b01000000) == 0); } },
+        { 7, (i, a) => { return ((i & 0b10000000) != 0) && ((a & 0b11000000) == 0); } },
         { 5, (i, a) => { return ((i & 0b00100000) != 0) && ((a & 0b11000000) == 0); } },
         { 4, (i, a) => { return ((i & 0b00010000) != 0) && ((a & 0b11000000) == 0); } },
         { 3, (i, a) => { i &= 0b00001010; return ((i ^ 0b00001000) == 0); } },
@@ -41,6 +42,13 @@ public class PlayerController : MonoBehaviour
         { 1, (i, a) => { i &= 0b00001010; return ((i ^ 0b00000010) == 0); } },
         { 0, (i, a) => { i &= 0b00000101; return ((i ^ 0b00000001) == 0); } }
     };
+    private float busyTimeElapsed;
+    private Dictionary<byte, float> busyTimes = new Dictionary<byte, float>
+    {
+        { 1, 1 }
+    };
+   
+
     // Start is called before the first frame update
     Vector3 movingSpeed = new Vector3();
 
@@ -86,15 +94,34 @@ public class PlayerController : MonoBehaviour
         }
         actionStates = intendedActionStates;
     }
+    private void UpdateBusy()
+    {
+        if (busyStates == 0) return;
+        busyTimeElapsed += Time.fixedDeltaTime;
+        Debug.Log(busyTimeElapsed);
+        if (busyTimeElapsed > busyTimes[busyStates]) busyStates = 0;
+    }
     private void UpdatePhysics()
     {
         Vector3 facingDirection = new Vector3();
         Vector3 facingSpeed = new Vector3();
         //Debug.Log(System.Convert.ToString(actionStates, 2).PadLeft(8, '0'));
-        if ((actionStates & 0b10000000) == 0)
+        if ((actionStates & 0b10000000) != 0 && busyStates == 0)
+        {
+            busyStates |= 0b00000001;
+            busyTimeElapsed = 0;
+            animator.SetInteger(triggerNumHash, 2);
+            animator.SetTrigger("Trigger");
+        }
+
+        if (busyStates == 0)
         {
             facingDirection.x = (actionStates & 0b00000001) != 0 ? 1 : 0 + (actionStates & 0b00000100) != 0 ? -1 : 0;
             facingDirection.z = (actionStates & 0b00001000) != 0 ? 1 : 0 + (actionStates & 0b00000010) != 0 ? -1 : 0;
+            animator.SetFloat(animSpeedHash, 1);
+            Vector3 aimDirection = mousePoint - transform.position;
+            aimDirection.y = 0;
+            transform.rotation = Quaternion.LookRotation(aimDirection);
         }
         
         facingDirection.Normalize();
@@ -103,15 +130,6 @@ public class PlayerController : MonoBehaviour
         {
             facingSpeed *= sprintMult;
         }
-        else 
-        {
-            animator.SetFloat(animSpeedHash, 1);
-            Vector3 aimDirection = mousePoint - transform.position;
-            aimDirection.y = 0;
-            transform.rotation = Quaternion.LookRotation(aimDirection);
-        }
-
-        
 
         if (transform.position.y > 1.5)
         {
@@ -144,13 +162,12 @@ public class PlayerController : MonoBehaviour
             actionStates &= 0b10111111;
         }
 
-        if ((actionStates & 0b10010000) != 0)
+        if ((actionStates & 0b00010000) != 0 && busyStates == 0)
         {
-
             if (movingSpeed.magnitude != 0) transform.rotation = Quaternion.LookRotation(movingSpeed);
         }
 
-        if ((actionStates & 0b00100000) != 0)
+        if ((actionStates & 0b00100000) != 0 && busyStates == 0)
         {
             fallingSpeed = jumpHeight;
             if (Math.Abs(movingSpeed.x) < Math.Abs((facingDirection.x * movementSpeed))) movingSpeed.x = facingDirection.x * movementSpeed;
@@ -173,7 +190,7 @@ public class PlayerController : MonoBehaviour
         animator.SetBool(movingHash, (actionStates & 0b00001111) != 0 && (actionStates & 0b11000000) == 0 && (actionStates & 0b00001010) != 10 && (actionStates & 0b00000101) != 5);
         animator.SetFloat(velocityHash, movingSpeed.magnitude / movementSpeed);
 
-        animator.SetInteger(actionHash, (actionStates & 0b00100000) != 0 ? 1 : 0);
+        animator.SetInteger(actionHash, (actionStates & 0b10100000) != 0 ? 1 : 0);
     }
     void Start()
     {
@@ -185,6 +202,7 @@ public class PlayerController : MonoBehaviour
     {
         CheckInputs();
         UpdateStates();
+        UpdateBusy();
         UpdatePhysics();
         UpdateAnimations();
     }
