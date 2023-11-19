@@ -419,6 +419,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   characterController: {fileID: 1118318250}
+  animator: {fileID: 1118318251}
   movementSpeed: 8
   acceleration: 50
   jumpHeight: 10
@@ -452,6 +453,11 @@ CharacterController:
   m_SkinWidth: 0.0001
   m_MinMoveDistance: 0
   m_Center: {x: 0, y: 0, z: 0}
+--- !u!95 &1118318251 stripped
+Animator:
+  m_CorrespondingSourceObject: {fileID: 9500000, guid: 781a15e490c144941adf6440cf6b6cdd, type: 3}
+  m_PrefabInstance: {fileID: 1277571767}
+  m_PrefabAsset: {fileID: 0}
 --- !u!1001 &1277571767
 PrefabInstance:
   m_ObjectHideFlags: 0
