@@ -22,6 +22,8 @@ public class PlayerController : MonoBehaviour
     public float mouseDepth = 14;
     private float fallingSpeed;
     public int health;
+    private float maxHealth;
+
 
     private Vector3 mousePoint;
     private byte lastInputStates = 0b00000000;
@@ -66,12 +68,29 @@ public class PlayerController : MonoBehaviour
     
     public void Setup(Canvas cav, Camera cam)
     {
+        maxHealth = health;
         playerCam = cam;
         healthBar.transform.SetParent(cav.transform);
         if (healthBar.TryGetComponent<FaceCamera>(out FaceCamera faceCamera))
         {
             faceCamera.Camera = cam;
         }
+    }
+    public void OnTakeDamage(int Damage)
+    {
+
+        if (health < 0)
+        {
+            health = 0;
+            Debug.Log("Ded lul");
+            return;
+            //OnDied();
+            //Agent.enabled = false;
+        }
+        health -= Damage;
+        healthBar.SetProgress((float)health / maxHealth, 3);
+
+        
     }
 
     private void AnimatorHashSetup()
@@ -113,7 +132,7 @@ public class PlayerController : MonoBehaviour
     {
         if (busyStates == 0) return;
         busyTimeElapsed += Time.fixedDeltaTime;
-        Debug.Log(busyTimeElapsed);
+
         if (busyTimeElapsed > busyTimes[busyStates]) busyStates = 0;
     }
     private void UpdatePhysics()
@@ -125,6 +144,7 @@ public class PlayerController : MonoBehaviour
         {
             busyStates |= 0b00000001;
             busyTimeElapsed = 0;
+            OnTakeDamage(20);
             animator.SetInteger(triggerNumHash, 2);
             animator.SetTrigger("Trigger");
         }
