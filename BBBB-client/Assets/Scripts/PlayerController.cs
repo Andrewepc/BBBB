@@ -5,18 +5,23 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour
 {
-    public CharacterController characterController;
-    public Animator animator;
+    [SerializeField]
+    private CharacterController characterController;
+    [SerializeField]
+    private Animator animator;
+    [SerializeField]
+    private ProgressBar healthBar;
+    [SerializeField]
+    private Camera playerCam;
+    public Vector3 cameraOffset = new Vector3(0, 10, -10);
     public float movementSpeed = 6;
-    public float acceleration = 10;
+    public float acceleration = 50;
     public float jumpHeight = 10;
-    public float gravity = 10f;
+    public float gravity = 30f;
     public float sprintMult = 2;
     public float mouseDepth = 14;
-    public Camera playerCam;
-    public Vector3 cameraOffset = new Vector3(0, 10, -10);
-
     private float fallingSpeed;
+    public int health;
 
     private Vector3 mousePoint;
     private byte lastInputStates = 0b00000000;
@@ -59,6 +64,16 @@ public class PlayerController : MonoBehaviour
     private int actionHash;
     private int triggerNumHash;
     
+    public void Setup(Canvas cav, Camera cam)
+    {
+        playerCam = cam;
+        healthBar.transform.SetParent(cav.transform);
+        if (healthBar.TryGetComponent<FaceCamera>(out FaceCamera faceCamera))
+        {
+            faceCamera.Camera = cam;
+        }
+    }
+
     private void AnimatorHashSetup()
     {
         movingHash = Animator.StringToHash("Moving");
@@ -186,7 +201,7 @@ public class PlayerController : MonoBehaviour
 
     private void UpdateAnimations()
     {
-        animator.SetFloat(animSpeedHash, movementSpeed / 3);
+        animator.SetFloat(animSpeedHash, movementSpeed / 4);
         animator.SetBool(movingHash, (actionStates & 0b00001111) != 0 && (actionStates & 0b11000000) == 0 && (actionStates & 0b00001010) != 10 && (actionStates & 0b00000101) != 5);
         animator.SetFloat(velocityHash, movingSpeed.magnitude / movementSpeed);
 
