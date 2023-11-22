@@ -11,11 +11,14 @@ public class SessionController : MonoBehaviour
     private Canvas Canvas;
     [SerializeField]
     private GameObject prefab;
+    private GameObject localPlayer;
     // Start is called before the first frame update
     void Start()
     {
-        GameObject agent = Instantiate(prefab, new Vector3(500,2,500), Quaternion.identity);
-        agent.GetComponent<PlayerController>().Setup(Canvas, Camera);
+        GameObject localPlayer = Instantiate(prefab, new Vector3(500,2,500), Quaternion.identity);
+        localPlayer.GetComponent<PlayerController>().Setup(Canvas, Camera);
+        GetComponent<SocketController>().player = localPlayer;
+
     }
 
     // Update is called once per frame
