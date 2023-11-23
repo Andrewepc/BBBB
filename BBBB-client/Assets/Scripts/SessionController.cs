@@ -13,28 +13,35 @@ public class SessionController : MonoBehaviour
     private GameObject prefab;
     [SerializeField]
     private SocketController socketController;
-    //private GameObject localPlayer;
+    private Dictionary<string, GameObject> players = new Dictionary<string, GameObject>();
     // GameObject opponentPlayer;
     private Dictionary<string, PlayerData> playersData = new Dictionary<string, PlayerData>();
     // Start is called before the first frame update
 
     public void onClientConnected(string localId)
     {
-        Debug.Log(localId);
-        GameObject localPlayer = Instantiate(prefab, new Vector3(500, 5, 500), Quaternion.identity);
-        localPlayer.GetComponent<PlayerController>().Setup(Canvas, Camera, localPlayer.AddComponent<InputController>());
-        playersData[localId] = localPlayer.GetComponent<PlayerController>().playerData;
+        //Debug.Log(localId);
+        players[localId] = Instantiate(prefab, new Vector3(500, 5, 500), Quaternion.identity);
+        players[localId].GetComponent<PlayerController>().Setup(Canvas, Camera, players[localId].AddComponent<InputController>());
+        playersData[localId] = players[localId].GetComponent<PlayerController>().playerData;
         playersData[localId].id = localId;
-        Camera.GetComponent<FollowTarget>().Target = localPlayer.transform;
+        Camera.GetComponent<FollowTarget>().Target = players[localId].transform;
         
         
     }
     public void onOpponentConnected(string oppId)
     {
-        GameObject opponentPlayer = Instantiate(prefab, new Vector3(502, 5, 500), Quaternion.identity);
-        opponentPlayer.GetComponent<PlayerController>().Setup(Canvas, Camera);
-        playersData[oppId] = opponentPlayer.GetComponent<PlayerController>().playerData;
+        players[oppId] = Instantiate(prefab, new Vector3(502, 5, 500), Quaternion.identity);
+        players[oppId].GetComponent<PlayerController>().Setup(Canvas, Camera);
+        playersData[oppId] = players[oppId].GetComponent<PlayerController>().playerData;
         playersData[oppId].id = oppId;
+
+    }
+    public void onOpponentDisconnected(string oppId)
+    {
+        Destroy(players[oppId]);
+        players.Remove(oppId);
+        playersData.Remove(oppId);
 
     }
     void Start()

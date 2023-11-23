@@ -12,7 +12,7 @@ public class SocketController : MonoBehaviour
     public Dictionary<string, PlayerData> playerData;
     public UnityEvent<string> clientConnected;
     public UnityEvent<string> opponentConnected;
-
+    public UnityEvent<string> opponentDisconnected;
     class Message
     {
         public string type;
@@ -33,7 +33,7 @@ public class SocketController : MonoBehaviour
                     clientConnected.Invoke(localId);
                     continue;
                 }
-                if (messages[i].timestamp != 0)
+                if (messages[i].timestamp > 0)
                 {
                     if (playerData.ContainsKey(messages[i].id))
                     {
@@ -42,6 +42,7 @@ public class SocketController : MonoBehaviour
                     }
                     opponentConnected.Invoke(messages[i].id);
                     playerData[messages[i].id].Copy(messages[i]);
+                    continue;
                     //Debug.Log(messages[i].payload);
                     //continue;
                     //Dictionary<string, PlayerData> gameData = JsonUtility.FromJson<Dictionary<string, PlayerData>>(messages[i].payload);
@@ -58,6 +59,11 @@ public class SocketController : MonoBehaviour
                     //}
                     //continue;
                 }
+                if (messages[i].timestamp == -1) 
+                {
+                    Debug.Log("HI");
+                    opponentDisconnected.Invoke(messages[i].id);
+                };
             }
             messages = new List<PlayerData>();
         }
@@ -77,7 +83,7 @@ public class SocketController : MonoBehaviour
             string msg = System.Text.Encoding.UTF8.GetString(e);
             
             messages.Add(JsonUtility.FromJson<PlayerData>(msg));
-            Debug.Log(messages[0].id);
+            //Debug.Log(messages[0].id);
         };
 
         //If server connection closes (not client originated)

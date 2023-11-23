@@ -43,8 +43,8 @@ wss.on('connection', function connection(client){
 	client.on('message', (data) => {
 		var dataJSON = JSON.parse(data)
 		playersData[client.id] = dataJSON
-		console.log("Player Message")
-		console.log(dataJSON)
+		//console.log("Player Message")
+		//console.log(dataJSON)
 		
 	})
 
@@ -53,6 +53,10 @@ wss.on('connection', function connection(client){
 		console.log('This Connection Closed!')
 		console.log("Removing Client: " + client.id)
 		delete playersData[client.id]
+		spectators.forEach(rem => {
+			rem.send(`{ "id": "${client.id}", "timestamp": "-1"}`)
+		})
+		console.log(`{ "id": "${client.id}", "timestamp": "-1"}`)
 	})
 
 })

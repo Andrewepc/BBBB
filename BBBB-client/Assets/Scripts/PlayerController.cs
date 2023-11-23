@@ -247,4 +247,9 @@ public class PlayerController : MonoBehaviour
         playerData.position = transform.position;
         
     }
+    private void OnDestroy()
+    {
+        Debug.Log("LUL");
+        Destroy(healthBar.gameObject);
+    }
 }
