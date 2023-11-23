@@ -22,7 +22,7 @@ var playersData = {}
 
 
 
-  var spectators = [];
+var spectators = [];
 
 //=====WEBSOCKET FUNCTIONS======
 
@@ -66,7 +66,9 @@ wss.on('listening', () => {
 })
 
 setInterval(function() {
-	
+	for(var id in playersData){
+		testCollisions(id)
+	}
 	spectators.forEach(client => {
 		for(var id in playersData){
 			client.send(JSON.stringify(playersData[id]))
@@ -75,3 +77,65 @@ setInterval(function() {
 	})
 	
   }, 16);
+
+  testCollisions = (id) => {
+	//console.log((playersData[id].actionStates & 0b01000000))
+	if ((playersData[id].actionStates & 0b01000000)) {
+		for(var un in playersData){
+			
+			if (un === id) continue;
+			//console.log(addVector(playersData[un].position,{x:0,y:1.75,z:0}))
+			if (spheresIntersect(0.25,playersData[id].position,0.5, addVector(playersData[un].position,{x:0,y:1.5,z:0}))) {
+				
+				playersData[un].health -= 20
+				console.log(playersData[un].health)
+				playersData[id].fallingSpeed += 20;
+				playersData[id].position = addVector(playersData[id].position,{x:0,y:1,z:0})
+			}
+		}
+	}
+	if ((playersData[id].actionStates & 0b00010000) && magnitude(playersData[id].movingSpeed) > 11) {
+		for(var un in playersData){
+			
+			if (un === id) continue;
+			//console.log(addVector(playersData[un].position,{x:0,y:1.75,z:0}))
+			if (spheresIntersect(0.5,addVector(playersData[id].position,{x:0,y:1,z:0}),0.5, addVector(playersData[un].position,{x:0,y:1,z:0}))) {
+				
+				playersData[un].health -= 10
+				console.log(playersData[un].health)
+				playersData[un].movingSpeed = scaleVector(playersData[id].movingSpeed,2)
+				playersData[id].movingSpeed = 0
+				//var d = directionVector(playersData[id].position, playersData[un].position)
+				//playersData[id].position = addVector(playersData[id].position,{x:0.6*d.x,y:0.6*d.y,z:0.6*d.z})
+				//playersData[un].position = addVector(playersData[un].position,{x:-0.6*d.x,y:-0.6*d.y,z:-0.6*d.z})
+			}
+		}
+	}
+
+  }
+
+  spheresIntersect = function(radius1, position1, radius2, position2){
+    return distanceBetween(position1, position2) <= (radius1 + radius2)
+}
+
+distanceBetween = function(position1, position2){
+    return Math.sqrt((position2.x - position1.x) ** 2 + (position2.y - position1.y) ** 2 + (position2.z - position1.z) ** 2)
+}
+addVector = function(v1, v2){
+    return {x:v1.x+v2.x,y:v1.y+v2.y,z:v1.z+v2.z}
+}
+subVector = function(v1, v2){
+    return {x:v2.x-v1.x,y:v2.y-v1.y,z:v2.z-v1.z}
+}
+scaleVector = function(v1, c){
+    return {x:c*v1.x,y:c*v1.y,z:c*v1.z}
+}
+directionVector = function(v1, v2){
+	var dV= subVector(v1,v2)
+	var m = magnitude(dV)
+    return {x:dV.x/m,y:dV.y/m,z:dV.z/m}
+}
+magnitude = function(vector){
+    return Math.sqrt((vector.x) ** 2 + (vector.y) ** 2 + (vector.z) ** 2)
+}
+

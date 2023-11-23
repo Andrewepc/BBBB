@@ -16,8 +16,8 @@ public class PlayerController : MonoBehaviour
 
     public float movementSpeed = 6;
     public float acceleration = 50;
-    public float jumpHeight = 10;
-    public float gravity = 30f;
+    public float jumpHeight = 20;
+    public float gravity = 50f;
     public float sprintMult = 2;
 
     
@@ -71,6 +71,8 @@ public class PlayerController : MonoBehaviour
         {
             faceCamera.Camera = cam;
         }
+        playerData.health = health;
+        playerData.position = transform.position;
         return playerData;
     }
     public PlayerData Setup(Canvas cav, Camera cam, InputController input)
@@ -82,6 +84,8 @@ public class PlayerController : MonoBehaviour
             faceCamera.Camera = cam;
         }
         inputController = input;
+        playerData.health = health;
+        playerData.position = transform.position;
         return playerData;
     }
     public void OnTakeDamage(int Damage)
@@ -237,13 +241,15 @@ public class PlayerController : MonoBehaviour
     void FixedUpdate()
     {
         transform.position = playerData.position;
-        
+        if (playerData.health != health) OnTakeDamage(health - playerData.health);
+
         UpdateStates();
         UpdateBusy();
         
         UpdatePhysics();
         
         UpdateAnimations();
+        playerData.health = health;
         playerData.position = transform.position;
         
     }
