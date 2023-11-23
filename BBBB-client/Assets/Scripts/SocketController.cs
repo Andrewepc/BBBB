@@ -7,36 +7,71 @@ using WebSocketSharp;
 public class SocketController : MonoBehaviour
 {
     WebSocket socket;
+    private List<Message> messages = new List<Message>();
+    private string localId;
+    public Dictionary<string, PlayerData> playerData;
+    public UnityEvent<string> clientConnected;
+    public UnityEvent<string> opponentConnected;
 
-    public List<PlayerData> playerData;
-    public UnityEvent clientConnected;
-    
+    class Message
+    {
+        public string type;
+        public string payload;
+    }
+
+    private void CheckMessages()
+    {
+        if (messages.Count > 0)
+        {
+            for (var i = 0; i < messages.Count; i++)
+            {
+                if (messages[i].type == "setupId")
+                {
+
+                    localId = messages[i].payload;
+                    clientConnected.Invoke(localId);
+                    continue;
+                }
+                if (messages[i].type == "gameData")
+                {
+                    continue;
+                    Dictionary<string, PlayerData> gameData = JsonUtility.FromJson<Dictionary<string, PlayerData>>(messages[i].payload);
+                    //tempPlayerData.position = new Vector3(tempPlayerData.position.x * -1, tempPlayerData.position.y, tempPlayerData.position.z * -1);
+                    foreach (KeyValuePair<string, PlayerData> entry in gameData)
+                    {
+                        if (playerData[entry.Key] != null)
+                        {
+                            playerData[entry.Key].Copy(entry.Value);
+                            continue;
+                        }
+                        opponentConnected.Invoke(entry.Key);
+                        playerData[entry.Key].Copy(entry.Value);
+                    }
+                    continue;
+                }
+            }
+            messages.Clear();
+        }
+    }
     // Start is called before the first frame update
     void Start()
     {
 
         socket = new WebSocket("ws://localhost:8080");
         socket.Connect();
-        clientConnected.Invoke();
-
+        
+        
         //WebSocket onMessage function
         socket.OnMessage += (sender, e) =>
         {
-
+            
             //If received data is type text...
             if (e.IsText)
             {
-                //Debug.Log("IsText");
-                //Debug.Log(e.Data);
-                PlayerData tempPlayerData = JsonUtility.FromJson<PlayerData>(e.Data);
-                tempPlayerData.position = new Vector3(tempPlayerData.position.x * -1, tempPlayerData.position.y, tempPlayerData.position.z * -1);
-                
-                playerData[1].Copy(tempPlayerData);
-                //Debug.Log(playerData[1].position.x);
+                messages.Add(JsonUtility.FromJson<Message>(e.Data));
+
                 return;
-
             }
-
         };
 
         //If server connection closes (not client originated)
@@ -51,22 +86,25 @@ public class SocketController : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
-        if (socket == null || playerData == null)
+
+        CheckMessages();
+
+        if (socket == null || playerData == null || !playerData.ContainsKey(localId))
         {
             return;
         }
 
 
         //If player is correctly configured, begin sending player data to server
-        if (playerData[0] != null && playerData[0].id != "")
+        if (playerData[localId].id != "")
         {
 
             System.DateTime epochStart = new System.DateTime(1970, 1, 1, 8, 0, 0, System.DateTimeKind.Utc);
             double timestamp = (System.DateTime.UtcNow - epochStart).TotalSeconds;
             //Debug.Log(timestamp);
-            playerData[0].timestamp = timestamp;
+            playerData[localId].timestamp = timestamp;
 
-            string playerDataJSON = JsonUtility.ToJson(playerData[0]);
+            string playerDataJSON = JsonUtility.ToJson(playerData[localId]);
             socket.Send(playerDataJSON);
         }
 

@@ -6,29 +6,9 @@ const wss = new WebSocket.WebSocketServer({port:8080}, ()=> {
 })
 
 //Object that stores player data 
-var playersData = {
-	"type" : "playerData"
-}
+var playersData = {}
 
-var player1 = {
-	id: '',
-	gameData: {
-		xPos: 0,
-		yPos: 0,
-		zPos: 0,
-		timestamp: 0
-	}
-  }
 
-  var player2 = {
-	id: '',
-	gameData: {
-		xPos: 0,
-		yPos: 0,
-		zPos: 0,
-		timestamp: 0
-	}
-  }
 
   var spectators = [];
 
@@ -42,22 +22,15 @@ wss.on('connection', function connection(client){
 
 	console.log(`Client ${client.id} Connected!`)
 
-	if (player1.id === '') {
-		player1 = client.id
-	} else if (player2.id === '') {
-		player2 = client.id
-	} else {
-		//spectators.push(client.id);
-	}
 	spectators.push(client);
 
 	//Send default client data back to client for reference
-	client.send(`{"id": "${client.id}"}`)
+	client.send(`{"type": "setupId", "payload": "${client.id}"}`)
 
 	//Method retrieves message from client
 	client.on('message', (data) => {
 		var dataJSON = JSON.parse(data)
-		client.playerData = dataJSON
+		playersData[client.id] = dataJSON
 		console.log("Player Message")
 		console.log(dataJSON)
 		
@@ -75,8 +48,9 @@ wss.on('listening', () => {
 	console.log('listening on 8080')
 })
 
-setInterval(function() {
-	spectators.forEach(client => {
-		client.send(JSON.stringify(client.playerData))
-	});
-  }, 16);
+//setInterval(function() {
+//	var message = `{"type": "gameData", "payload": "${JSON.stringify(playersData)}"}`
+//	spectators.forEach(client => {
+//		client.send(message)
+//	});
+//  }, 16);

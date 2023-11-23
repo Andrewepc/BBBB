@@ -20,6 +20,7 @@ public class InputController : MonoBehaviour
 
     private void CheckInputs()
     {
+        if (!Application.isFocused) return;
         Vector3 p = Input.mousePosition;
         p.z = mouseDepth;
         mousePoint = Camera.main.ScreenToWorldPoint(p);

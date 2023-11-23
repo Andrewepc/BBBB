@@ -13,23 +13,27 @@ public class SessionController : MonoBehaviour
     private GameObject prefab;
     [SerializeField]
     private SocketController socketController;
-    private GameObject localPlayer;
-    private GameObject opponentPlayer;
-    private List<PlayerData> playersData = new List<PlayerData>();
+    //private GameObject localPlayer;
+    // GameObject opponentPlayer;
+    private Dictionary<string, PlayerData> playersData = new Dictionary<string, PlayerData>();
     // Start is called before the first frame update
 
-    public void onClientConnected()
+    public void onClientConnected(string localId)
     {
-        
-        localPlayer = Instantiate(prefab, new Vector3(500, 5, 500), Quaternion.identity);
+        //Debug.Log(localId);
+        GameObject localPlayer = Instantiate(prefab, new Vector3(500, 5, 500), Quaternion.identity);
         localPlayer.GetComponent<PlayerController>().Setup(Canvas, Camera, localPlayer.AddComponent<InputController>());
-        playersData.Add(localPlayer.GetComponent<PlayerController>().playerData);
+        playersData[localId] = localPlayer.GetComponent<PlayerController>().playerData;
         Camera.GetComponent<FollowTarget>().Target = localPlayer.transform;
         
-        opponentPlayer = Instantiate(prefab, new Vector3(502, 5, 500), Quaternion.identity);
-        opponentPlayer.GetComponent<PlayerController>().Setup(Canvas, Camera);
-        playersData.Add(opponentPlayer.GetComponent<PlayerController>().playerData);
         
+    }
+    public void onOpponentConnected(string oppId)
+    {
+        GameObject opponentPlayer = Instantiate(prefab, new Vector3(502, 5, 500), Quaternion.identity);
+        opponentPlayer.GetComponent<PlayerController>().Setup(Canvas, Camera);
+        playersData[oppId] = opponentPlayer.GetComponent<PlayerController>().playerData;
+
     }
     void Start()
     {

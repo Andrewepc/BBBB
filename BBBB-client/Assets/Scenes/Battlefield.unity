@@ -350,7 +350,7 @@ MonoBehaviour:
   Camera: {fileID: 963194227}
   Canvas: {fileID: 44778320}
   prefab: {fileID: 2735523157901033461, guid: e6eea43689a0812499eb52642e570849, type: 3}
-  socketController: {fileID: 0}
+  socketController: {fileID: 663048937}
 --- !u!4 &663048936
 Transform:
   m_ObjectHideFlags: 0
@@ -378,19 +378,29 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 734eec7e0dfa1ae4788ea28a13cb3f16, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  playerData:
-    id: 
-    xPos: 0
-    yPos: 0
-    zPos: 0
-    timestamp: 0
+  localId: 
   clientConnected:
     m_PersistentCalls:
       m_Calls:
       - m_Target: {fileID: 663048935}
         m_TargetAssemblyTypeName: SessionController, Assembly-CSharp
         m_MethodName: onClientConnected
-        m_Mode: 1
+        m_Mode: 0
+        m_Arguments:
+          m_ObjectArgument: {fileID: 0}
+          m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
+          m_IntArgument: 0
+          m_FloatArgument: 0
+          m_StringArgument: 
+          m_BoolArgument: 0
+        m_CallState: 2
+  opponentConnected:
+    m_PersistentCalls:
+      m_Calls:
+      - m_Target: {fileID: 663048935}
+        m_TargetAssemblyTypeName: SessionController, Assembly-CSharp
+        m_MethodName: onOpponentConnected
+        m_Mode: 0
         m_Arguments:
           m_ObjectArgument: {fileID: 0}
           m_ObjectArgumentAssemblyTypeName: UnityEngine.Object, UnityEngine
