@@ -91,8 +91,13 @@ setInterval(function() {
 				
 				playersData[un].health -= 20
 				console.log(playersData[un].health)
-				playersData[id].fallingSpeed += 20;
+				playersData[id].fallingSpeed += 10;
 				playersData[id].position = addVector(playersData[id].position,{x:0,y:1,z:0})
+				if (playersData[un].health <= 0) {
+					playersData[id].score += 1
+					playersData[id].health = 100
+					spectators[un].close()
+				}
 			}
 		}
 	}
@@ -107,6 +112,11 @@ setInterval(function() {
 				console.log(playersData[un].health)
 				playersData[un].movingSpeed = scaleVector(playersData[id].movingSpeed,2)
 				playersData[id].movingSpeed = 0
+				if (playersData[un].health <= 0) {
+					playersData[id].score += 1
+					playersData[id].health = 100
+					spectators[un].close()
+				}
 				//var d = directionVector(playersData[id].position, playersData[un].position)
 				//playersData[id].position = addVector(playersData[id].position,{x:0.6*d.x,y:0.6*d.y,z:0.6*d.z})
 				//playersData[un].position = addVector(playersData[un].position,{x:-0.6*d.x,y:-0.6*d.y,z:-0.6*d.z})
