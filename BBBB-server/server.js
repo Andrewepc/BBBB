@@ -111,6 +111,29 @@ setInterval(function() {
 			}
 		}
 	}
+	if ((playersData[id].busyStates & 0b00000001) ) {
+		
+		if (!(playersData[id].busyTimeElapsed > 0.3 && playersData[id].busyTimeElapsed < 0.3333)) return
+		for(var un in playersData){
+			
+			if (un === id) continue;
+			console.log(playersData[id].busyTimeElapsed)
+			//console.log(playersData[id].aimDirection)
+			if (spheresIntersect(1,addVector(playersData[id].position,{x:0,y:3,z:0}),0.5, addVector(playersData[un].position,{x:0,y:1,z:0}))
+			|| spheresIntersect(1,addVector(playersData[id].position,addVector(scaleVector(playersData[id].aimDirection,1),{x:0,y:2,z:0})),0.5, addVector(playersData[un].position,{x:0,y:1,z:0}))
+			|| spheresIntersect(1,addVector(playersData[id].position,addVector(scaleVector(playersData[id].aimDirection,2),{x:0,y:1,z:0})),0.5, addVector(playersData[un].position,{x:0,y:1,z:0}))) {
+				
+				playersData[un].health -= 50
+				console.log(playersData[un].health)
+				playersData[un].position = addVector(playersData[un].position,scaleVector(playersData[id].aimDirection,4 - distanceBetween(playersData[id].position,playersData[un].position)))
+				playersData[un].movingSpeed = scaleVector(playersData[id].aimDirection,24)
+
+				//var d = directionVector(playersData[id].position, playersData[un].position)
+				//playersData[id].position = addVector(playersData[id].position,{x:0.6*d.x,y:0.6*d.y,z:0.6*d.z})
+				//playersData[un].position = addVector(playersData[un].position,{x:-0.6*d.x,y:-0.6*d.y,z:-0.6*d.z})
+			}
+		}
+	}
 
   }
 

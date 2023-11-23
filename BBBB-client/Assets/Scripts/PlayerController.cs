@@ -42,10 +42,9 @@ public class PlayerController : MonoBehaviour
         { 1, (i, a) => { i &= 0b00001010; return ((i ^ 0b00000010) == 0); } },
         { 0, (i, a) => { i &= 0b00000101; return ((i ^ 0b00000001) == 0); } }
     };
-    private float busyTimeElapsed;
     private Dictionary<byte, float> busyTimes = new Dictionary<byte, float>
     {
-        { 1, 1 }
+        { 1, 0.66f }
     };
    
 
@@ -122,7 +121,9 @@ public class PlayerController : MonoBehaviour
         
         if (inputController != null)
         {
-            playerData.mousePoint = inputController.mousePoint;
+            playerData.aimDirection = inputController.mousePoint - transform.position;
+            playerData.aimDirection.y = 0;
+            playerData.aimDirection.Normalize();
             playerData.lastInputStates = inputController.lastInputStates;
             
         }
@@ -137,9 +138,9 @@ public class PlayerController : MonoBehaviour
     private void UpdateBusy()
     {
         if (playerData.busyStates == 0) return;
-        busyTimeElapsed += Time.fixedDeltaTime;
-
-        if (busyTimeElapsed > busyTimes[playerData.busyStates]) playerData.busyStates = 0;
+        playerData.busyTimeElapsed += Time.fixedDeltaTime;
+        Debug.Log(playerData.busyTimeElapsed);
+        if (playerData.busyTimeElapsed > busyTimes[playerData.busyStates]) playerData.busyStates = 0;
     }
     private void UpdatePhysics()
     {
@@ -149,8 +150,8 @@ public class PlayerController : MonoBehaviour
         if ((playerData.actionStates & 0b10000000) != 0 && playerData.busyStates == 0)
         {
             playerData.busyStates |= 0b00000001;
-            busyTimeElapsed = 0;
-            OnTakeDamage(20);
+            playerData.busyTimeElapsed = 0;
+            //OnTakeDamage(20);
             animator.SetInteger(triggerNumHash, 2);
             animator.SetTrigger("Trigger");
         }
@@ -160,9 +161,8 @@ public class PlayerController : MonoBehaviour
             facingDirection.x = (playerData.actionStates & 0b00000001) != 0 ? 1 : 0 + (playerData.actionStates & 0b00000100) != 0 ? -1 : 0;
             facingDirection.z = (playerData.actionStates & 0b00001000) != 0 ? 1 : 0 + (playerData.actionStates & 0b00000010) != 0 ? -1 : 0;
             animator.SetFloat(animSpeedHash, 1);
-            Vector3 aimDirection = playerData.mousePoint - transform.position;
-            aimDirection.y = 0;
-            if (aimDirection.magnitude != 0) transform.rotation = Quaternion.LookRotation(aimDirection);
+            
+            if (playerData.aimDirection.magnitude != 0) transform.rotation = Quaternion.LookRotation(playerData.aimDirection);
         }
         
         facingDirection.Normalize();
