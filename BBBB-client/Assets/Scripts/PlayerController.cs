@@ -12,6 +12,8 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     private ProgressBar healthBar;
     [SerializeField]
+    private ScoreCounter scroeCounter;
+    [SerializeField]
     private InputController inputController;
 
     public float movementSpeed = 6;
@@ -242,7 +244,7 @@ public class PlayerController : MonoBehaviour
     {
         transform.position = playerData.position;
         if (playerData.health != health) OnTakeDamage(health - playerData.health);
-
+        scroeCounter.SetScore(playerData.score);
         UpdateStates();
         UpdateBusy();
         

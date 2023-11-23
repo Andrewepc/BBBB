@@ -14,6 +14,7 @@ public class PlayerData
     public byte busyStates;
     public float busyTimeElapsed;
     public int health;
+    public int score;
     public double timestamp;
 
     public void Copy(PlayerData newPlayerData)
@@ -28,6 +29,7 @@ public class PlayerData
         busyStates = newPlayerData.busyStates;
         busyTimeElapsed = newPlayerData.busyTimeElapsed;
         health = newPlayerData.health;
+        score = newPlayerData.score;
         timestamp = newPlayerData.timestamp;
 
     }

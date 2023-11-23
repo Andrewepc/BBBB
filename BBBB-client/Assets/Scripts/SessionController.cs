@@ -2,6 +2,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.AI;
+using UnityEngine.SceneManagement;
 
 public class SessionController : MonoBehaviour
 {
@@ -44,7 +45,11 @@ public class SessionController : MonoBehaviour
         playersData.Remove(oppId);
 
     }
-    void Start()
+    public void onDeath()
+    {
+        SceneManager.LoadScene("Dead");
+    }
+        void Start()
     {
         
         socketController.playerData = playersData;

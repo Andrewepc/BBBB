@@ -22,7 +22,7 @@ var playersData = {}
 
 
 
-var spectators = [];
+var spectators = {};
 
 //=====WEBSOCKET FUNCTIONS======
 
@@ -34,7 +34,7 @@ wss.on('connection', function connection(client){
 
 	console.log(`Client ${client.id} Connected!`)
 
-	spectators.push(client);
+	spectators[client.id] = client;
 
 	//Send default client data back to client for reference
 	client.send(`{ "id": "${client.id}"}`)
@@ -53,9 +53,11 @@ wss.on('connection', function connection(client){
 		console.log('This Connection Closed!')
 		console.log("Removing Client: " + client.id)
 		delete playersData[client.id]
-		spectators.forEach(rem => {
-			rem.send(`{ "id": "${client.id}", "timestamp": "-1"}`)
-		})
+		delete spectators[client.id]
+		for(var id in spectators){
+			spectators[id].send(`{ "id": "${client.id}", "timestamp": "-1"}`)
+		}
+		
 		console.log(`{ "id": "${client.id}", "timestamp": "-1"}`)
 	})
 
@@ -69,12 +71,12 @@ setInterval(function() {
 	for(var id in playersData){
 		testCollisions(id)
 	}
-	spectators.forEach(client => {
+	for(var cl in spectators){
 		for(var id in playersData){
-			client.send(JSON.stringify(playersData[id]))
+			spectators[cl].send(JSON.stringify(playersData[id]))
 		}
 			
-	})
+	}
 	
   }, 16);
 
@@ -123,11 +125,15 @@ setInterval(function() {
 			|| spheresIntersect(1,addVector(playersData[id].position,addVector(scaleVector(playersData[id].aimDirection,1),{x:0,y:2,z:0})),0.5, addVector(playersData[un].position,{x:0,y:1,z:0}))
 			|| spheresIntersect(1,addVector(playersData[id].position,addVector(scaleVector(playersData[id].aimDirection,2),{x:0,y:1,z:0})),0.5, addVector(playersData[un].position,{x:0,y:1,z:0}))) {
 				
-				playersData[un].health -= 50
-				console.log(playersData[un].health)
+				playersData[un].health -= 40
+				
 				playersData[un].position = addVector(playersData[un].position,scaleVector(playersData[id].aimDirection,4 - distanceBetween(playersData[id].position,playersData[un].position)))
 				playersData[un].movingSpeed = scaleVector(playersData[id].aimDirection,24)
-
+				if (playersData[un].health <= 0) {
+					playersData[id].score += 1
+					playersData[id].health = 100
+					spectators[un].close()
+				}
 				//var d = directionVector(playersData[id].position, playersData[un].position)
 				//playersData[id].position = addVector(playersData[id].position,{x:0.6*d.x,y:0.6*d.y,z:0.6*d.z})
 				//playersData[un].position = addVector(playersData[un].position,{x:-0.6*d.x,y:-0.6*d.y,z:-0.6*d.z})

@@ -13,6 +13,7 @@ public class SocketController : MonoBehaviour
     public UnityEvent<string> clientConnected;
     public UnityEvent<string> opponentConnected;
     public UnityEvent<string> opponentDisconnected;
+    public UnityEvent death;
     class Message
     {
         public string type;
@@ -91,6 +92,7 @@ public class SocketController : MonoBehaviour
         {
             Debug.Log(e);
             Debug.Log("Connection Closed!");
+            death.Invoke();
         };
         InvokeRepeating("SendWebSocketMessage", 0.0f, 0.016f);
 
