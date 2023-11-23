@@ -2,13 +2,13 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
-using WebSocketSharp;
+using NativeWebSocket;
 
 public class SocketController : MonoBehaviour
 {
     WebSocket socket;
-    private List<Message> messages = new List<Message>();
-    private string localId;
+    private List<PlayerData> messages = new List<PlayerData>();
+    private string localId = "";
     public Dictionary<string, PlayerData> playerData;
     public UnityEvent<string> clientConnected;
     public UnityEvent<string> opponentConnected;
@@ -16,7 +16,7 @@ public class SocketController : MonoBehaviour
     class Message
     {
         public string type;
-        public string payload;
+        public PlayerData data;
     }
 
     private void CheckMessages()
@@ -25,69 +25,82 @@ public class SocketController : MonoBehaviour
         {
             for (var i = 0; i < messages.Count; i++)
             {
-                if (messages[i].type == "setupId")
+                
+                if (messages[i].timestamp == 0 && localId == "")
                 {
-
-                    localId = messages[i].payload;
+                    
+                    localId = messages[i].id;
                     clientConnected.Invoke(localId);
                     continue;
                 }
-                if (messages[i].type == "gameData")
+                if (messages[i].timestamp != 0)
                 {
-                    continue;
-                    Dictionary<string, PlayerData> gameData = JsonUtility.FromJson<Dictionary<string, PlayerData>>(messages[i].payload);
-                    //tempPlayerData.position = new Vector3(tempPlayerData.position.x * -1, tempPlayerData.position.y, tempPlayerData.position.z * -1);
-                    foreach (KeyValuePair<string, PlayerData> entry in gameData)
+                    if (playerData.ContainsKey(messages[i].id))
                     {
-                        if (playerData[entry.Key] != null)
-                        {
-                            playerData[entry.Key].Copy(entry.Value);
-                            continue;
-                        }
-                        opponentConnected.Invoke(entry.Key);
-                        playerData[entry.Key].Copy(entry.Value);
+                        playerData[messages[i].id].Copy(messages[i]);
+                        continue;
                     }
-                    continue;
+                    opponentConnected.Invoke(messages[i].id);
+                    playerData[messages[i].id].Copy(messages[i]);
+                    //Debug.Log(messages[i].payload);
+                    //continue;
+                    //Dictionary<string, PlayerData> gameData = JsonUtility.FromJson<Dictionary<string, PlayerData>>(messages[i].payload);
+                    ////tempPlayerData.position = new Vector3(tempPlayerData.position.x * -1, tempPlayerData.position.y, tempPlayerData.position.z * -1);
+                    //foreach (KeyValuePair<string, PlayerData> entry in gameData)
+                    //{
+                    //    if (playerData[entry.Key] != null)
+                    //    {
+                    //        playerData[entry.Key].Copy(entry.Value);
+                    //        continue;
+                    //    }
+                    //    opponentConnected.Invoke(entry.Key);
+                    //    playerData[entry.Key].Copy(entry.Value);
+                    //}
+                    //continue;
                 }
             }
-            messages.Clear();
+            messages = new List<PlayerData>();
         }
     }
     // Start is called before the first frame update
-    void Start()
+    async void Start()
     {
-
+        
         socket = new WebSocket("ws://localhost:8080");
-        socket.Connect();
         
-        
+
         //WebSocket onMessage function
-        socket.OnMessage += (sender, e) =>
+        socket.OnMessage += (e) =>
         {
             
             //If received data is type text...
-            if (e.IsText)
-            {
-                messages.Add(JsonUtility.FromJson<Message>(e.Data));
-
-                return;
-            }
+            string msg = System.Text.Encoding.UTF8.GetString(e);
+            
+            messages.Add(JsonUtility.FromJson<PlayerData>(msg));
+            Debug.Log(messages[0].id);
         };
 
         //If server connection closes (not client originated)
-        socket.OnClose += (sender, e) =>
+        socket.OnClose += (e) =>
         {
-            Debug.Log(e.Code);
-            Debug.Log(e.Reason);
+            Debug.Log(e);
             Debug.Log("Connection Closed!");
         };
+        InvokeRepeating("SendWebSocketMessage", 0.0f, 0.016f);
+
+        // waiting for messages
+        await socket.Connect();
     }
 
     // Update is called once per frame
     void FixedUpdate()
     {
-
+#if !UNITY_WEBGL || UNITY_EDITOR
+        socket.DispatchMessageQueue();
+#endif
         CheckMessages();
+
+        if (localId == null) return;
 
         if (socket == null || playerData == null || !playerData.ContainsKey(localId))
         {
@@ -105,20 +118,42 @@ public class SocketController : MonoBehaviour
             playerData[localId].timestamp = timestamp;
 
             string playerDataJSON = JsonUtility.ToJson(playerData[localId]);
-            socket.Send(playerDataJSON);
+            
+            socket.SendText(playerDataJSON);
         }
 
-        if (Input.GetKeyDown(KeyCode.M))
+    }
+
+    async void SendWebSocketMessage()
+    {
+        if (socket.State == WebSocketState.Open)
         {
-            string messageJSON = "{\"message\": \"Some Message From Client\"}";
-            socket.Send(messageJSON);
+            if (localId == null) return;
+
+            if (socket == null || playerData == null || !playerData.ContainsKey(localId))
+            {
+                return;
+            }
+
+
+            //If player is correctly configured, begin sending player data to server
+            if (playerData[localId].id != "")
+            {
+
+                System.DateTime epochStart = new System.DateTime(1970, 1, 1, 8, 0, 0, System.DateTimeKind.Utc);
+                double timestamp = (System.DateTime.UtcNow - epochStart).TotalSeconds;
+                //Debug.Log(timestamp);
+                playerData[localId].timestamp = timestamp;
+
+                string playerDataJSON = JsonUtility.ToJson(playerData[localId]);
+                await socket.SendText(playerDataJSON);
+            }
         }
     }
 
-    private void OnDestroy()
+    private async void OnApplicationQuit()
     {
-        //Close socket when exiting application
-        socket.Close();
+        await socket.Close();
     }
 
 }

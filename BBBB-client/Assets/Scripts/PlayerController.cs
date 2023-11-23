@@ -82,7 +82,6 @@ public class PlayerController : MonoBehaviour
             faceCamera.Camera = cam;
         }
         inputController = input;
-        Debug.Log(playerData);
         return playerData;
     }
     public void OnTakeDamage(int Damage)
@@ -159,7 +158,7 @@ public class PlayerController : MonoBehaviour
             animator.SetFloat(animSpeedHash, 1);
             Vector3 aimDirection = playerData.mousePoint - transform.position;
             aimDirection.y = 0;
-            transform.rotation = Quaternion.LookRotation(aimDirection);
+            if (aimDirection.magnitude != 0) transform.rotation = Quaternion.LookRotation(aimDirection);
         }
         
         facingDirection.Normalize();

@@ -1,5 +1,17 @@
 var uuid = require('uuid-random');
 const WebSocket = require('ws')
+const express = require('express');
+var compression  = require('compression');
+const path = require('path')
+const app = express();
+ 
+app.use(compression());
+app.use(express.static(path.join(__dirname, 'build')));
+ 
+ 
+app.listen(8000, () => {
+console.log('Server has started!')
+});
 
 const wss = new WebSocket.WebSocketServer({port:8080}, ()=> {
 	console.log('server started')
@@ -25,7 +37,7 @@ wss.on('connection', function connection(client){
 	spectators.push(client);
 
 	//Send default client data back to client for reference
-	client.send(`{"type": "setupId", "payload": "${client.id}"}`)
+	client.send(`{ "id": "${client.id}"}`)
 
 	//Method retrieves message from client
 	client.on('message', (data) => {
@@ -40,6 +52,7 @@ wss.on('connection', function connection(client){
 	client.on('close', () => {
 		console.log('This Connection Closed!')
 		console.log("Removing Client: " + client.id)
+		delete playersData[client.id]
 	})
 
 })
@@ -48,9 +61,13 @@ wss.on('listening', () => {
 	console.log('listening on 8080')
 })
 
-//setInterval(function() {
-//	var message = `{"type": "gameData", "payload": "${JSON.stringify(playersData)}"}`
-//	spectators.forEach(client => {
-//		client.send(message)
-//	});
-//  }, 16);
+setInterval(function() {
+	
+	spectators.forEach(client => {
+		for(var id in playersData){
+			client.send(JSON.stringify(playersData[id]))
+		}
+			
+	})
+	
+  }, 16);

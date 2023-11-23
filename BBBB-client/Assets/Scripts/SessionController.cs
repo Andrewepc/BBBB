@@ -20,10 +20,11 @@ public class SessionController : MonoBehaviour
 
     public void onClientConnected(string localId)
     {
-        //Debug.Log(localId);
+        Debug.Log(localId);
         GameObject localPlayer = Instantiate(prefab, new Vector3(500, 5, 500), Quaternion.identity);
         localPlayer.GetComponent<PlayerController>().Setup(Canvas, Camera, localPlayer.AddComponent<InputController>());
         playersData[localId] = localPlayer.GetComponent<PlayerController>().playerData;
+        playersData[localId].id = localId;
         Camera.GetComponent<FollowTarget>().Target = localPlayer.transform;
         
         
@@ -33,10 +34,12 @@ public class SessionController : MonoBehaviour
         GameObject opponentPlayer = Instantiate(prefab, new Vector3(502, 5, 500), Quaternion.identity);
         opponentPlayer.GetComponent<PlayerController>().Setup(Canvas, Camera);
         playersData[oppId] = opponentPlayer.GetComponent<PlayerController>().playerData;
+        playersData[oppId].id = oppId;
 
     }
     void Start()
     {
+        
         socketController.playerData = playersData;
 
     }
