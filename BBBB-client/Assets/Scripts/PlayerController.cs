@@ -12,33 +12,26 @@ public class PlayerController : MonoBehaviour
     [SerializeField]
     private ProgressBar healthBar;
     [SerializeField]
-    private Camera playerCam;
-    public Vector3 cameraOffset = new Vector3(0, 10, -10);
+    private InputController inputController;
+
     public float movementSpeed = 6;
     public float acceleration = 50;
     public float jumpHeight = 10;
     public float gravity = 30f;
     public float sprintMult = 2;
-    public float mouseDepth = 14;
-    private float fallingSpeed;
+
+    
     public int health;
     private float maxHealth;
 
-
+    public PlayerData playerData = new PlayerData();
+    /*
     private Vector3 mousePoint;
     private byte lastInputStates = 0b00000000;
     private byte actionStates = 0b00000000;
     private byte busyStates = 0;
-    private Dictionary<KeyCode, byte> inputsToByte = new Dictionary<KeyCode, byte>
-    {
-        { KeyCode.Mouse0, 0b10000000 },
-        { KeyCode.Space, 0b00100000 },
-        { KeyCode.LeftShift, 0b00010000 },
-        { KeyCode.W, 0b00001000 },
-        { KeyCode.A, 0b00000100 },
-        { KeyCode.S, 0b00000010 },
-        { KeyCode.D, 0b00000001 }
-    };
+    */
+    
     private Dictionary<byte, System.Func<byte, byte, bool>> inputsToActions = new Dictionary<byte, System.Func<byte, byte, bool>>
     {
         { 7, (i, a) => { return ((i & 0b10000000) != 0) && ((a & 0b11000000) == 0); } },
@@ -57,7 +50,7 @@ public class PlayerController : MonoBehaviour
    
 
     // Start is called before the first frame update
-    Vector3 movingSpeed = new Vector3();
+    
 
     private int movingHash;
     private int animSpeedHash;
@@ -66,15 +59,31 @@ public class PlayerController : MonoBehaviour
     private int actionHash;
     private int triggerNumHash;
     
-    public void Setup(Canvas cav, Camera cam)
+    public void plus()
+    {
+        playerData.position = new Vector3(500, 5, 500);
+    }
+    public PlayerData Setup(Canvas cav, Camera cam)
     {
         maxHealth = health;
-        playerCam = cam;
         healthBar.transform.SetParent(cav.transform);
         if (healthBar.TryGetComponent<FaceCamera>(out FaceCamera faceCamera))
         {
             faceCamera.Camera = cam;
         }
+        return playerData;
+    }
+    public PlayerData Setup(Canvas cav, Camera cam, InputController input)
+    {
+        maxHealth = health;
+        healthBar.transform.SetParent(cav.transform);
+        if (healthBar.TryGetComponent<FaceCamera>(out FaceCamera faceCamera))
+        {
+            faceCamera.Camera = cam;
+        }
+        inputController = input;
+        Debug.Log(playerData);
+        return playerData;
     }
     public void OnTakeDamage(int Damage)
     {
@@ -104,73 +113,67 @@ public class PlayerController : MonoBehaviour
         animator.SetFloat(animSpeedHash, movementSpeed / 3);
     }
 
-    private void CheckInputs()
-    {
-        Vector3 p = Input.mousePosition;
-        p.z = mouseDepth;
-        mousePoint = Camera.main.ScreenToWorldPoint(p);
-        byte inputStates = 0b00000000;
-        foreach (KeyValuePair<KeyCode, byte> entry in inputsToByte)
-        {
-            if (Input.GetKey(entry.Key)) inputStates += entry.Value;
-        }
-        
-        lastInputStates = inputStates;
-    }
+    
     private void UpdateStates()
     {
         
+        if (inputController != null)
+        {
+            playerData.mousePoint = inputController.mousePoint;
+            playerData.lastInputStates = inputController.lastInputStates;
+            
+        }
         byte intendedActionStates = 0;
         for(int i = 7; i >= 0; i--)
         {
             intendedActionStates = (byte)(intendedActionStates << 1);
-            if (inputsToActions.ContainsKey((byte)i) && inputsToActions[(byte)i](lastInputStates, actionStates)) intendedActionStates++;  
+            if (inputsToActions.ContainsKey((byte)i) && inputsToActions[(byte)i](playerData.lastInputStates, playerData.actionStates)) intendedActionStates++;  
         }
-        actionStates = intendedActionStates;
+        playerData.actionStates = intendedActionStates;
     }
     private void UpdateBusy()
     {
-        if (busyStates == 0) return;
+        if (playerData.busyStates == 0) return;
         busyTimeElapsed += Time.fixedDeltaTime;
 
-        if (busyTimeElapsed > busyTimes[busyStates]) busyStates = 0;
+        if (busyTimeElapsed > busyTimes[playerData.busyStates]) playerData.busyStates = 0;
     }
     private void UpdatePhysics()
     {
         Vector3 facingDirection = new Vector3();
         Vector3 facingSpeed = new Vector3();
         //Debug.Log(System.Convert.ToString(actionStates, 2).PadLeft(8, '0'));
-        if ((actionStates & 0b10000000) != 0 && busyStates == 0)
+        if ((playerData.actionStates & 0b10000000) != 0 && playerData.busyStates == 0)
         {
-            busyStates |= 0b00000001;
+            playerData.busyStates |= 0b00000001;
             busyTimeElapsed = 0;
             OnTakeDamage(20);
             animator.SetInteger(triggerNumHash, 2);
             animator.SetTrigger("Trigger");
         }
 
-        if (busyStates == 0)
+        if (playerData.busyStates == 0)
         {
-            facingDirection.x = (actionStates & 0b00000001) != 0 ? 1 : 0 + (actionStates & 0b00000100) != 0 ? -1 : 0;
-            facingDirection.z = (actionStates & 0b00001000) != 0 ? 1 : 0 + (actionStates & 0b00000010) != 0 ? -1 : 0;
+            facingDirection.x = (playerData.actionStates & 0b00000001) != 0 ? 1 : 0 + (playerData.actionStates & 0b00000100) != 0 ? -1 : 0;
+            facingDirection.z = (playerData.actionStates & 0b00001000) != 0 ? 1 : 0 + (playerData.actionStates & 0b00000010) != 0 ? -1 : 0;
             animator.SetFloat(animSpeedHash, 1);
-            Vector3 aimDirection = mousePoint - transform.position;
+            Vector3 aimDirection = playerData.mousePoint - transform.position;
             aimDirection.y = 0;
             transform.rotation = Quaternion.LookRotation(aimDirection);
         }
         
         facingDirection.Normalize();
         facingSpeed = facingDirection * movementSpeed;
-        if ((actionStates & 0b00010000) != 0)
+        if ((playerData.actionStates & 0b00010000) != 0)
         {
             facingSpeed *= sprintMult;
         }
 
-        if (transform.position.y > 1.5)
+        if (transform.position.y > 0)
         {
-            fallingSpeed -= gravity * Time.fixedDeltaTime;
-            actionStates |= 0b01000000;
-            if (fallingSpeed < 0 && animator.GetInteger(jumpingHash) != 2) { 
+            playerData.fallingSpeed -= gravity * Time.fixedDeltaTime;
+            playerData.actionStates |= 0b01000000;
+            if (playerData.fallingSpeed < 0 && animator.GetInteger(jumpingHash) != 2) { 
                 animator.SetInteger(jumpingHash, 2);
                 animator.SetInteger(triggerNumHash, 1);
                 animator.SetTrigger("Trigger");
@@ -179,53 +182,52 @@ public class PlayerController : MonoBehaviour
         }
         else 
         {
-            
-            if (movingSpeed.x < facingSpeed.x) movingSpeed.x += MathF.Min(Time.fixedDeltaTime * acceleration, facingSpeed.x - movingSpeed.x);
-            else if (movingSpeed.x > facingSpeed.x) movingSpeed.x -= MathF.Min(Time.fixedDeltaTime * acceleration, movingSpeed.x - facingSpeed.x);
-            if (movingSpeed.z < facingSpeed.z) movingSpeed.z += MathF.Min(Time.fixedDeltaTime * acceleration, facingSpeed.z - movingSpeed.z);
-            else if (movingSpeed.z > facingSpeed.z) movingSpeed.z -= MathF.Min(Time.fixedDeltaTime * acceleration, movingSpeed.z - facingSpeed.z);
+            transform.position = new Vector3(transform.position.x, 0, transform.position.z);
+            if (playerData.movingSpeed.x < facingSpeed.x) playerData.movingSpeed.x += MathF.Min(Time.fixedDeltaTime * acceleration, facingSpeed.x - playerData.movingSpeed.x);
+            else if (playerData.movingSpeed.x > facingSpeed.x) playerData.movingSpeed.x -= MathF.Min(Time.fixedDeltaTime * acceleration, playerData.movingSpeed.x - facingSpeed.x);
+            if (playerData.movingSpeed.z < facingSpeed.z) playerData.movingSpeed.z += MathF.Min(Time.fixedDeltaTime * acceleration, facingSpeed.z - playerData.movingSpeed.z);
+            else if (playerData.movingSpeed.z > facingSpeed.z) playerData.movingSpeed.z -= MathF.Min(Time.fixedDeltaTime * acceleration, playerData.movingSpeed.z - facingSpeed.z);
 
-            if (fallingSpeed < 0)
+            if (playerData.fallingSpeed < 0)
             {
                 animator.SetInteger(jumpingHash, 0);
                 animator.SetInteger(triggerNumHash, 1);
                 animator.SetTrigger("Trigger");
             }
-                
 
-            fallingSpeed = 0;
-            actionStates &= 0b10111111;
+
+            playerData.fallingSpeed = 0;
+            playerData.actionStates &= 0b10111111;
         }
 
-        if ((actionStates & 0b00010000) != 0 && busyStates == 0)
+        if ((playerData.actionStates & 0b00010000) != 0 && playerData.busyStates == 0)
         {
-            if (movingSpeed.magnitude != 0) transform.rotation = Quaternion.LookRotation(movingSpeed);
+            if (playerData.movingSpeed.magnitude != 0) transform.rotation = Quaternion.LookRotation(playerData.movingSpeed);
         }
 
-        if ((actionStates & 0b00100000) != 0 && busyStates == 0)
+        if ((playerData.actionStates & 0b00100000) != 0 && playerData.busyStates == 0)
         {
-            fallingSpeed = jumpHeight;
-            if (Math.Abs(movingSpeed.x) < Math.Abs((facingDirection.x * movementSpeed))) movingSpeed.x = facingDirection.x * movementSpeed;
-            if (Math.Abs(movingSpeed.z) < Math.Abs((facingDirection.z * movementSpeed))) movingSpeed.z = facingDirection.z * movementSpeed;
-            
-            actionStates |= 0b01000000;
+            playerData.fallingSpeed = jumpHeight;
+            if (Math.Abs(playerData.movingSpeed.x) < Math.Abs((facingDirection.x * movementSpeed))) playerData.movingSpeed.x = facingDirection.x * movementSpeed;
+            if (Math.Abs(playerData.movingSpeed.z) < Math.Abs((facingDirection.z * movementSpeed))) playerData.movingSpeed.z = facingDirection.z * movementSpeed;
+
+            playerData.actionStates |= 0b01000000;
             animator.SetInteger(jumpingHash, 1);
             animator.SetInteger(triggerNumHash, 1);
             animator.SetTrigger("Trigger");
         }
-        
-        
-        characterController.Move(Time.fixedDeltaTime * (movingSpeed + transform.up * fallingSpeed));
-        playerCam.transform.position = transform.position + cameraOffset;
+
+        transform.position += (Time.fixedDeltaTime * (playerData.movingSpeed + transform.up * playerData.fallingSpeed));
+        //characterController.Move(Time.fixedDeltaTime * (movingSpeed + transform.up * fallingSpeed));Debug.Log(transform.position.y);
     }
 
     private void UpdateAnimations()
     {
         animator.SetFloat(animSpeedHash, movementSpeed / 4);
-        animator.SetBool(movingHash, (actionStates & 0b00001111) != 0 && (actionStates & 0b11000000) == 0 && (actionStates & 0b00001010) != 10 && (actionStates & 0b00000101) != 5);
-        animator.SetFloat(velocityHash, movingSpeed.magnitude / movementSpeed);
+        animator.SetBool(movingHash, (playerData.actionStates & 0b00001111) != 0 && (playerData.actionStates & 0b11000000) == 0 && (playerData.actionStates & 0b00001010) != 10 && (playerData.actionStates & 0b00000101) != 5);
+        animator.SetFloat(velocityHash, playerData.movingSpeed.magnitude / movementSpeed);
 
-        animator.SetInteger(actionHash, (actionStates & 0b10100000) != 0 ? 1 : 0);
+        animator.SetInteger(actionHash, (playerData.actionStates & 0b10100000) != 0 ? 1 : 0);
     }
     void Start()
     {
@@ -235,10 +237,16 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
-        CheckInputs();
+        Debug.Log(playerData.position.x);
+        transform.position = playerData.position;
+        
         UpdateStates();
         UpdateBusy();
+        
         UpdatePhysics();
+        
         UpdateAnimations();
+        playerData.position = transform.position;
+        
     }
 }

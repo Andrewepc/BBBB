@@ -47,9 +47,9 @@ wss.on('connection', function connection(client){
 	} else if (player2.id === '') {
 		player2 = client.id
 	} else {
-		spectators.push(client.id);
+		//spectators.push(client.id);
 	}
-	
+	spectators.push(client);
 
 	//Send default client data back to client for reference
 	client.send(`{"id": "${client.id}"}`)
@@ -57,7 +57,7 @@ wss.on('connection', function connection(client){
 	//Method retrieves message from client
 	client.on('message', (data) => {
 		var dataJSON = JSON.parse(data)
-		
+		client.playerData = dataJSON
 		console.log("Player Message")
 		console.log(dataJSON)
 		
@@ -74,3 +74,9 @@ wss.on('connection', function connection(client){
 wss.on('listening', () => {
 	console.log('listening on 8080')
 })
+
+setInterval(function() {
+	spectators.forEach(client => {
+		client.send(JSON.stringify(client.playerData))
+	});
+  }, 16);

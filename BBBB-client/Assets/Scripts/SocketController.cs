@@ -1,13 +1,15 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Events;
 using WebSocketSharp;
 
 public class SocketController : MonoBehaviour
 {
     WebSocket socket;
-    public GameObject player;
-    public PlayerData playerData;
+
+    public List<PlayerData> playerData;
+    public UnityEvent clientConnected;
     
     // Start is called before the first frame update
     void Start()
@@ -15,6 +17,7 @@ public class SocketController : MonoBehaviour
 
         socket = new WebSocket("ws://localhost:8080");
         socket.Connect();
+        clientConnected.Invoke();
 
         //WebSocket onMessage function
         socket.OnMessage += (sender, e) =>
@@ -26,8 +29,10 @@ public class SocketController : MonoBehaviour
                 //Debug.Log("IsText");
                 //Debug.Log(e.Data);
                 PlayerData tempPlayerData = JsonUtility.FromJson<PlayerData>(e.Data);
-                playerData = tempPlayerData;
-                Debug.Log("player ID is " + playerData.id);
+                tempPlayerData.position = new Vector3(tempPlayerData.position.x * -1, tempPlayerData.position.y, tempPlayerData.position.z * -1);
+                
+                playerData[1].Copy(tempPlayerData);
+                //Debug.Log(playerData[1].position.x);
                 return;
 
             }
@@ -44,27 +49,24 @@ public class SocketController : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update()
+    void FixedUpdate()
     {
-        if (socket == null)
+        if (socket == null || playerData == null)
         {
             return;
         }
 
+
         //If player is correctly configured, begin sending player data to server
-        if (player != null && playerData.id != "")
+        if (playerData[0] != null && playerData[0].id != "")
         {
-            //Grab player current position and rotation data
-            playerData.xPos = player.transform.position.x;
-            playerData.yPos = player.transform.position.y;
-            playerData.zPos = player.transform.position.z;
 
             System.DateTime epochStart = new System.DateTime(1970, 1, 1, 8, 0, 0, System.DateTimeKind.Utc);
             double timestamp = (System.DateTime.UtcNow - epochStart).TotalSeconds;
             //Debug.Log(timestamp);
-            playerData.timestamp = timestamp;
+            playerData[0].timestamp = timestamp;
 
-            string playerDataJSON = JsonUtility.ToJson(playerData);
+            string playerDataJSON = JsonUtility.ToJson(playerData[0]);
             socket.Send(playerDataJSON);
         }
 
