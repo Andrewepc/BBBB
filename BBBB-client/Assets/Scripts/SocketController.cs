@@ -73,7 +73,7 @@ public class SocketController : MonoBehaviour
     async void Start()
     {
         
-        socket = new WebSocket("ws://localhost:8080");
+        socket = new WebSocket("ws://bbbb-ah5p.onrender.com");
         
 
         //WebSocket onMessage function
