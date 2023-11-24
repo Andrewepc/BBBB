@@ -5,13 +5,13 @@ var compression  = require('compression');
 const path = require('path')
 const app = express();
  
-app.use(compression());
-app.use(express.static(path.join(__dirname, 'build')));
+// app.use(compression());
+// app.use(express.static(path.join(__dirname, 'build')));
  
  
-app.listen(8000, () => {
-console.log('Server has started!')
-});
+// app.listen(8000, () => {
+// console.log('Server has started!')
+// });
 
 const wss = new WebSocket.WebSocketServer({port:8080}, ()=> {
 	console.log('server started')
