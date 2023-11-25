@@ -75,7 +75,7 @@ setInterval(function() {
 		for(var id in playersData){
 			spectators[cl].send(JSON.stringify(playersData[id]))
 		}
-			
+
 	}
 	
   }, 16);

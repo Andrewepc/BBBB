@@ -45,6 +45,9 @@ public class SocketController : MonoBehaviour
                     }
                     opponentConnected.Invoke(messages[i].id);
                     playerData[messages[i].id].Copy(messages[i]);
+                    playerData[messages[i].id].position = playerData[messages[i].id].positionS;
+                    playerData[messages[i].id].movingSpeed = playerData[messages[i].id].movingSpeedS;
+                    playerData[messages[i].id].fallingSpeed = playerData[messages[i].id].fallingSpeedS;
                     continue;
                     //Debug.Log(messages[i].payload);
                     //continue;
@@ -168,10 +171,10 @@ public class SocketController : MonoBehaviour
         if (playerData[localId].id != "")
         {
 
-            System.DateTime epochStart = new System.DateTime(1970, 1, 1, 8, 0, 0, System.DateTimeKind.Utc);
-            double timestamp = (System.DateTime.UtcNow - epochStart).TotalSeconds;
-            //Debug.Log(timestamp);
-            playerData[localId].timestamp = timestamp;
+            //System.DateTime epochStart = new System.DateTime(1970, 1, 1, 8, 0, 0, System.DateTimeKind.Utc);
+            //double timestamp = (System.DateTime.UtcNow - epochStart).TotalSeconds;
+            ////Debug.Log(timestamp);
+            //playerData[localId].timestamp = timestamp;
 
             string playerDataJSON = JsonUtility.ToJson(playerData[localId]);
             
@@ -196,10 +199,10 @@ public class SocketController : MonoBehaviour
             if (playerData[localId].id != "")
             {
 
-                System.DateTime epochStart = new System.DateTime(1970, 1, 1, 8, 0, 0, System.DateTimeKind.Utc);
-                double timestamp = (System.DateTime.UtcNow - epochStart).TotalSeconds;
-                //Debug.Log(timestamp);
-                playerData[localId].timestamp = timestamp;
+                //System.DateTime epochStart = new System.DateTime(1970, 1, 1, 8, 0, 0, System.DateTimeKind.Utc);
+                //double timestamp = (System.DateTime.UtcNow - epochStart).TotalSeconds;
+                ////Debug.Log(timestamp);
+                //playerData[localId].timestamp = timestamp;
 
                 string playerDataJSON = JsonUtility.ToJson(playerData[localId]);
                 await socket.SendText(playerDataJSON);
