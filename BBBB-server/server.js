@@ -13,7 +13,7 @@ app.listen(8000, () => {
 console.log('Server has started!')
 });
 
-const wss = new WebSocket.WebSocketServer({port:27000}, ()=> {
+const wss = new WebSocket.WebSocketServer({port:8080}, ()=> {
 	console.log('server started')
 })
 

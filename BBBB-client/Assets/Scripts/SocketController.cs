@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Events;
 using NativeWebSocket;
+using UnityEngine.Networking;
 
 public class SocketController : MonoBehaviour
 {
@@ -14,10 +15,11 @@ public class SocketController : MonoBehaviour
     public UnityEvent<string> opponentConnected;
     public UnityEvent<string> opponentDisconnected;
     public UnityEvent death;
-    class Message
+    private Config configs = new Config();
+    private bool connected;
+    class Config
     {
-        public string type;
-        public PlayerData data;
+        public string ws_uri = "";
     }
 
     private void CheckMessages()
@@ -70,41 +72,87 @@ public class SocketController : MonoBehaviour
         }
     }
     // Start is called before the first frame update
-    async void Start()
+
+    IEnumerator GetPath()
     {
-        
-        socket = new WebSocket("ws://localhost:27000");
-        
+        string filePath = System.IO.Path.Combine(Application.streamingAssetsPath, "config.json");
 
-        //WebSocket onMessage function
-        socket.OnMessage += (e) =>
+        string result;
+        if (filePath.Contains("://") || filePath.Contains(":///"))
         {
             
-            //If received data is type text...
-            string msg = System.Text.Encoding.UTF8.GetString(e);
-            
-            messages.Add(JsonUtility.FromJson<PlayerData>(msg));
-            //Debug.Log(messages[0].id);
-        };
+            UnityWebRequest www = new UnityWebRequest(filePath);
+            www.downloadHandler = new DownloadHandlerBuffer();
 
-        //If server connection closes (not client originated)
-        socket.OnClose += (e) =>
+            yield return www.SendWebRequest();
+            Debug.Log("TEST: " + filePath);
+            if (www.result != UnityWebRequest.Result.Success)
+            {
+                Debug.Log(www.result);
+                result = www.error;
+            }
+            else
+            {
+                Debug.Log("TEST: " + www.downloadHandler);
+                result = www.downloadHandler.text;
+                Debug.Log("TEST: " + filePath);
+            }
+                
+            Debug.Log("TEST: " + filePath);
+        }
+        else
         {
-            Debug.Log(e);
-            Debug.Log("Connection Closed!");
-            death.Invoke();
-        };
-        InvokeRepeating("SendWebSocketMessage", 0.0f, 0.016f);
-
-        // waiting for messages
-        await socket.Connect();
+            result = System.IO.File.ReadAllText(filePath);
+        }
+        Debug.Log("Loaded file: " + result);
+        configs = JsonUtility.FromJson<Config>(result);
     }
+     void Start()
+    {
 
+        StartCoroutine(GetPath());
+        
+    }
+    async void Update()
+    {
+        if (configs.ws_uri == "") return;
+        if (!connected)
+        {
+            connected = true;
+            Debug.Log("DONE?");
+            socket = new WebSocket(configs.ws_uri);
+
+
+            //WebSocket onMessage function
+            socket.OnMessage += (e) =>
+            {
+
+                //If received data is type text...
+                string msg = System.Text.Encoding.UTF8.GetString(e);
+
+                messages.Add(JsonUtility.FromJson<PlayerData>(msg));
+                //Debug.Log(messages[0].id);
+            };
+
+            //If server connection closes (not client originated)
+            socket.OnClose += (e) =>
+            {
+                Debug.Log(e);
+                Debug.Log("Connection Closed!");
+                death.Invoke();
+            };
+            InvokeRepeating("SendWebSocketMessage", 0.0f, 0.016f);
+
+            // waiting for messages
+            await socket.Connect();
+        }
+    }
     // Update is called once per frame
     void FixedUpdate()
     {
+        if (!connected) return;
 #if !UNITY_WEBGL || UNITY_EDITOR
-        socket.DispatchMessageQueue();
+            socket.DispatchMessageQueue();
 #endif
         CheckMessages();
 
