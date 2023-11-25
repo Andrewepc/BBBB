@@ -8,9 +8,6 @@ public class PlayerData
     public Vector3 position;
     public Vector3 movingSpeed;
     public float fallingSpeed;
-    public Vector3 positionS;
-    public Vector3 movingSpeedS;
-    public float fallingSpeedS;
     public Vector3 aimDirection;
     public byte lastInputStates;
     public byte actionStates;
@@ -26,9 +23,6 @@ public class PlayerData
         position = newPlayerData.position;
         movingSpeed = newPlayerData.movingSpeed;
         fallingSpeed = newPlayerData.fallingSpeed;
-        position = newPlayerData.positionS;
-        movingSpeed = newPlayerData.movingSpeedS;
-        fallingSpeed = newPlayerData.fallingSpeedS;
         aimDirection = newPlayerData.aimDirection;
         lastInputStates = newPlayerData.lastInputStates;
         actionStates = newPlayerData.actionStates;

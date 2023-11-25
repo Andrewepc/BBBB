@@ -87,7 +87,6 @@ public class PlayerController : MonoBehaviour
         inputController = input;
         playerData.health = health;
         playerData.position = transform.position;
-        playerData.positionS = transform.position;
         return playerData;
     }
     public void OnTakeDamage(int Damage)
@@ -142,7 +141,6 @@ public class PlayerController : MonoBehaviour
     {
         if (playerData.busyStates == 0) return;
         playerData.busyTimeElapsed += Time.fixedDeltaTime;
-        Debug.Log(playerData.busyTimeElapsed);
         if (playerData.busyTimeElapsed > busyTimes[playerData.busyStates]) playerData.busyStates = 0;
     }
     private void UpdatePhysics()
@@ -152,7 +150,7 @@ public class PlayerController : MonoBehaviour
         
         float latency = (float)(timestamp - playerData.timestamp);
         latency = Time.fixedDeltaTime;
-        Debug.Log(Time.fixedDeltaTime + "  |  " + latency);
+        //Debug.Log(Time.fixedDeltaTime + "  |  " + latency);
         Vector3 facingDirection = new Vector3();
         Vector3 facingSpeed = new Vector3();
         float pTime1 = Time.fixedDeltaTime;
@@ -184,7 +182,6 @@ public class PlayerController : MonoBehaviour
         if (transform.position.y > 0)
         {
             playerData.fallingSpeed = playerData.fallingSpeed - gravity * pTime1;
-            playerData.fallingSpeedS -= gravity * latency;
             playerData.actionStates |= 0b01000000;
             if (playerData.fallingSpeed < 0 && animator.GetInteger(jumpingHash) != 2) { 
                 animator.SetInteger(jumpingHash, 2);
@@ -199,22 +196,22 @@ public class PlayerController : MonoBehaviour
             if (playerData.movingSpeed.x < facingSpeed.x) 
             {
                 playerData.movingSpeed.x = playerData.movingSpeed.x + MathF.Min(pTime1 * acceleration, facingSpeed.x - playerData.movingSpeed.x);
-                playerData.movingSpeedS.x += MathF.Min(latency * acceleration, facingSpeed.x - playerData.movingSpeed.x);
+                
             }
             else if (playerData.movingSpeed.x > facingSpeed.x)
             {
-                playerData.movingSpeed.x = playerData.movingSpeed.x + MathF.Min(pTime1 * acceleration, playerData.movingSpeed.x - facingSpeed.x);
-                playerData.movingSpeedS.x -= MathF.Min(latency * acceleration, playerData.movingSpeed.x - facingSpeed.x);
+                playerData.movingSpeed.x = playerData.movingSpeed.x - MathF.Min(pTime1 * acceleration, playerData.movingSpeed.x - facingSpeed.x);
+                
             }
             if (playerData.movingSpeed.z < facingSpeed.z)
             {
                 playerData.movingSpeed.z = playerData.movingSpeed.z + MathF.Min(pTime1 * acceleration, facingSpeed.z - playerData.movingSpeed.z);
-                playerData.movingSpeedS.z += MathF.Min(latency * acceleration, facingSpeed.z - playerData.movingSpeed.z);
+                
             }
             else if (playerData.movingSpeed.z > facingSpeed.z)
             {
-                playerData.movingSpeed.z = playerData.movingSpeed.z + MathF.Min(pTime1 * acceleration, playerData.movingSpeed.z - facingSpeed.z);
-                playerData.movingSpeedS.z -= MathF.Min(latency * acceleration, playerData.movingSpeed.z - facingSpeed.z);
+                playerData.movingSpeed.z = playerData.movingSpeed.z - MathF.Min(pTime1 * acceleration, playerData.movingSpeed.z - facingSpeed.z);
+                
             }
 
             if (playerData.fallingSpeed < 0)
@@ -226,7 +223,6 @@ public class PlayerController : MonoBehaviour
 
 
             playerData.fallingSpeed = 0;
-            playerData.fallingSpeedS = 0;
             playerData.actionStates &= 0b10111111;
         }
 
@@ -238,9 +234,8 @@ public class PlayerController : MonoBehaviour
         if ((playerData.actionStates & 0b00100000) != 0 && playerData.busyStates == 0)
         {
             playerData.fallingSpeed = jumpHeight;
-            playerData.fallingSpeedS = jumpHeight - gravity * (latency - Time.fixedDeltaTime) / 2;
-            if (Math.Abs(playerData.movingSpeed.x) < Math.Abs((facingDirection.x * movementSpeed))) { playerData.movingSpeed.x = facingDirection.x * movementSpeed; playerData.movingSpeedS.x = facingDirection.x * movementSpeed; }
-            if (Math.Abs(playerData.movingSpeed.z) < Math.Abs((facingDirection.z * movementSpeed))) { playerData.movingSpeed.z = facingDirection.z * movementSpeed; playerData.movingSpeedS.z = facingDirection.z * movementSpeed; }
+            if (Math.Abs(playerData.movingSpeed.x) < Math.Abs((facingDirection.x * movementSpeed))) { playerData.movingSpeed.x = facingDirection.x * movementSpeed; playerData.movingSpeed.x = facingDirection.x * movementSpeed; }
+            if (Math.Abs(playerData.movingSpeed.z) < Math.Abs((facingDirection.z * movementSpeed))) { playerData.movingSpeed.z = facingDirection.z * movementSpeed; playerData.movingSpeed.z = facingDirection.z * movementSpeed; }
 
             playerData.actionStates |= 0b01000000;
             animator.SetInteger(jumpingHash, 1);
@@ -249,10 +244,8 @@ public class PlayerController : MonoBehaviour
         }
 
 
-        Debug.Log(playerData.movingSpeed.ToString());
         transform.position += (pTime1 * (playerData.movingSpeed + transform.up * playerData.fallingSpeed));
         playerData.position = transform.position;
-        playerData.positionS += (latency * (playerData.movingSpeed + transform.up * playerData.fallingSpeed));
         playerData.timestamp = timestamp;
         //characterController.Move(Time.fixedDeltaTime * (movingSpeed + transform.up * fallingSpeed));Debug.Log(transform.position.y);
     }
@@ -273,6 +266,7 @@ public class PlayerController : MonoBehaviour
     // Update is called once per frame
     void FixedUpdate()
     {
+        //Debug.Log("player " + playerData.movingSpeed.ToString());
         transform.position = playerData.position;
         if (playerData.health != health) OnTakeDamage(health - playerData.health);
         scroeCounter.SetScore(playerData.score);

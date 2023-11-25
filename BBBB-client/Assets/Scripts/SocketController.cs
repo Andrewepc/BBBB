@@ -36,18 +36,16 @@ public class SocketController : MonoBehaviour
                     clientConnected.Invoke(localId);
                     continue;
                 }
-                if (messages[i].timestamp > 0)
+                if (messages[i].timestamp > 0d)
                 {
                     if (playerData.ContainsKey(messages[i].id))
                     {
                         playerData[messages[i].id].Copy(messages[i]);
+                        Debug.Log(playerData[messages[i].id].movingSpeed);
                         continue;
                     }
                     opponentConnected.Invoke(messages[i].id);
                     playerData[messages[i].id].Copy(messages[i]);
-                    playerData[messages[i].id].position = playerData[messages[i].id].positionS;
-                    playerData[messages[i].id].movingSpeed = playerData[messages[i].id].movingSpeedS;
-                    playerData[messages[i].id].fallingSpeed = playerData[messages[i].id].fallingSpeedS;
                     continue;
                     //Debug.Log(messages[i].payload);
                     //continue;
